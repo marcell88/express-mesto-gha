@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Card = require('../models/cards');
 
 const ValidationError = require('../errors/ValidationError');
-const CastError = require('../errors/CastError');
+const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
 
 const getCards = (req, res, next) => {
@@ -20,7 +20,7 @@ const deleteCardById = (req, res, next) => {
     .then(() => res.status(200).send({ message: 'Deleted successfully' }))
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        throw new CastError('Card with such id has not found');
+        throw new DocumentNotFoundError('Card with such id has not found');
       }
       throw new UnhandledError('Server has broken while trying to delete the card');
     })
@@ -55,7 +55,7 @@ const likeCard = (req, res, next) => {
         throw new ValidationError('Incorrect data were send to server during card liking');
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new CastError('Card with such id has not found');
+        throw new DocumentNotFoundError('Card with such id has not found');
       }
       throw new UnhandledError('Server has broken while trying to like the card');
     })
@@ -74,7 +74,7 @@ const deleteLikeOfCard = (req, res, next) => {
         throw new ValidationError('Incorrect data were send to server during card disliking');
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new CastError('Card with such id has not found');
+        throw new DocumentNotFoundError('Card with such id has not found');
       }
       throw new UnhandledError('Server has broken while trying to like the card');
     })

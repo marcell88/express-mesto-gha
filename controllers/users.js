@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const User = require('../models/users');
 
 const ValidationError = require('../errors/ValidationError');
-const CastError = require('../errors/CastError');
+const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
 
 const getUsers = (req, res, next) => {
@@ -16,11 +16,16 @@ const getUsers = (req, res, next) => {
 };
 
 const getUserById = (req, res, next) => {
+  console.log(req.params.id);
   User.findById(req.params.id)
+    .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
     .then((user) => res.status(200).send(user))
     .catch((err) => {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        throw new DocumentNotFoundError('User with such id has not found');
+      }
       if (err instanceof mongoose.Error.CastError) {
-        throw new CastError('User with such id has not found');
+        throw new ValidationError('User with such id has not found');
       }
       throw new UnhandledError('Server has broken while trying to get user by id');
     })
@@ -57,7 +62,7 @@ const updateProfile = (req, res, next) => {
         throw new ValidationError('Incorrect data were send to server for profile update');
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new CastError('User with such id has not found');
+        throw new DocumentNotFoundError('User with such id has not found');
       }
       throw new UnhandledError('Server has broken while trying to update profile');
     })
@@ -81,7 +86,7 @@ const updateAvatar = (req, res, next) => {
         throw new ValidationError('Incorrect data were send to server for avatar update');
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new CastError('User with such id has not found');
+        throw new DocumentNotFoundError('User with such id has not found');
       }
       throw new UnhandledError('Server has broken while trying to update avatar');
     })
