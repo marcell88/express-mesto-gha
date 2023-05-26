@@ -61,6 +61,9 @@ const updateProfile = (req, res, next) => {
       if (err instanceof mongoose.Error.ValidationError) {
         throw new BadRequestError('Incorrect data were send to server for profile update');
       }
+      if (err instanceof mongoose.Error.CastError) {
+        throw new BadRequestError('Please enter correct user id');
+      }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         throw new DocumentNotFoundError('User with such id has not found');
       }
@@ -85,6 +88,9 @@ const updateAvatar = (req, res, next) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         throw new BadRequestError('Incorrect data were send to server for avatar update');
+      }
+      if (err instanceof mongoose.Error.CastError) {
+        throw new BadRequestError('Please enter correct user id');
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         throw new DocumentNotFoundError('User with such id has not found');
