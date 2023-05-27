@@ -43,13 +43,10 @@ const createUser = (req, res, next) => {
     });
 };
 
-const updateProfile = (req, res, next) => {
+const updateUserInfo = (req, res, next, profileFieldsToUpdate) => {
   User.findByIdAndUpdate(
     req.user._id,
-    {
-      name: req.body.name,
-      about: req.body.about,
-    },
+    profileFieldsToUpdate,
     {
       new: true,
       runValidators: true,
@@ -70,30 +67,17 @@ const updateProfile = (req, res, next) => {
     });
 };
 
+const updateProfile = (req, res, next) => {
+  updateUserInfo(req, res, next, {
+    name: req.body.name,
+    about: req.body.about,
+  });
+};
+
 const updateAvatar = (req, res, next) => {
-  User.findByIdAndUpdate(
-    req.user._id,
-    {
-      avatar: req.body.avatar,
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
-  )
-    .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then((user) => res.status(HTTP_STATUS_OK).send(user))
-    .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        next(new BadRequestError('Incorrect data were send to server for avatar update'));
-        return;
-      }
-      if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        next(new DocumentNotFoundError('User with such id has not found'));
-        return;
-      }
-      next(new UnhandledError('Server has broken while trying to update avatar'));
-    });
+  updateUserInfo(req, res, next, {
+    avatar: req.body.avatar,
+  });
 };
 
 module.exports = {
