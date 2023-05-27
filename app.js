@@ -2,9 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = require('./routes/index');
 
+// Constants
 const { PORT = 3000 } = process.env;
-const app = express();
 
+const app = express();
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb')
   .then(() => {
     console.log('Connecteed to DB...');

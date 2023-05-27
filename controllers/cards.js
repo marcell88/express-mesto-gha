@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const http2 = require('node:http2');
 
 const Card = require('../models/cards');
 
@@ -6,29 +7,32 @@ const BadRequestError = require('../errors/BadRequestError');
 const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
 
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = http2.constants;
+
 const getCards = (req, res, next) => {
   Card.find({})
-    .then((cards) => res.status(200).send(cards))
+    .populate(['owner', 'likes'])
+    .then((cards) => res.status(HTTP_STATUS_OK).send(cards))
     .catch(() => {
-      throw new UnhandledError('Server has broken while trying to get all cards');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to get all cards'));
+    });
 };
 
 const deleteCardById = (req, res, next) => {
   Card.findByIdAndDelete(req.params.id)
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then(() => res.status(200).send({ message: 'Deleted successfully' }))
+    .then(() => res.status(HTTP_STATUS_OK).send({ message: 'Deleted successfully' }))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new DocumentNotFoundError('Card with such id has not found');
+        next(new DocumentNotFoundError('Card with such id has not found'));
+        return;
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new BadRequestError('Please enter correct card id');
+        next(new BadRequestError('Please enter correct card id'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to delete the card');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to delete the card'));
+    });
 };
 
 const createCard = (req, res, next) => {
@@ -37,14 +41,14 @@ const createCard = (req, res, next) => {
     link: req.body.link,
     owner: req.user._id,
   })
-    .then((card) => res.status(201).send(card))
+    .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestError('Incorrect data were send to server for card creation');
+        next(new BadRequestError('Incorrect data were send to server for card creation'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to create new card');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to create new card'));
+    });
 };
 
 const likeCard = (req, res, next) => {
@@ -53,21 +57,20 @@ const likeCard = (req, res, next) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
+    .populate(['owner', 'likes'])
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then((card) => res.status(200).send(card))
+    .then((card) => res.status(HTTP_STATUS_OK).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new DocumentNotFoundError('Card with such id has not found');
-      }
-      if (err instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestError('Incorrect data were send to server during card liking');
+        next(new DocumentNotFoundError('Card with such id has not found'));
+        return;
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new BadRequestError('Please enter correct card id');
+        next(new BadRequestError('Please enter correct card id'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to like the card');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to like the card'));
+    });
 };
 
 const deleteLikeOfCard = (req, res, next) => {
@@ -76,21 +79,20 @@ const deleteLikeOfCard = (req, res, next) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
+    .populate(['owner', 'likes'])
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then((card) => res.status(200).send(card))
+    .then((card) => res.status(HTTP_STATUS_OK).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new DocumentNotFoundError('Card with such id has not found');
-      }
-      if (err instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestError('Incorrect data were send to server during card disliking');
+        next(new DocumentNotFoundError('Card with such id has not found'));
+        return;
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new BadRequestError('Please enter correct card id');
+        next(new BadRequestError('Please enter correct card id'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to dislike the card');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to dislike the card'));
+    });
 };
 
 module.exports = {

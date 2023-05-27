@@ -1,46 +1,46 @@
 const mongoose = require('mongoose');
-
-const User = require('../models/users');
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = require('node:http2').constants;
 
 const BadRequestError = require('../errors/BadRequestError');
 const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
+const User = require('../models/users');
 
 const getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.status(200).send(users))
+    .then((users) => res.status(HTTP_STATUS_OK).send(users))
     .catch(() => {
-      throw new UnhandledError('Server has broken while trying to get all users');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to get all users'));
+    });
 };
 
 const getUserById = (req, res, next) => {
   User.findById(req.params.id)
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new DocumentNotFoundError('User with such id has not found');
+        next(new DocumentNotFoundError('User with such id has not found'));
+        return;
       }
       if (err instanceof mongoose.Error.CastError) {
-        throw new BadRequestError('Please enter correct user id');
+        next(new BadRequestError('Please enter correct user id'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to get user by id');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to get user by id'));
+    });
 };
 
 const createUser = (req, res, next) => {
   User.create(req.body)
-    .then((user) => res.status(201).send(user))
+    .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestError('Incorrect data were send to server for user creation');
+        next(new BadRequestError('Incorrect data were send to server for user creation'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to create new user');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to create new user'));
+    });
 };
 
 const updateProfile = (req, res, next) => {
@@ -56,20 +56,18 @@ const updateProfile = (req, res, next) => {
     },
   )
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestError('Incorrect data were send to server for profile update');
-      }
-      if (err instanceof mongoose.Error.CastError) {
-        throw new BadRequestError('Please enter correct user id');
+        next(new BadRequestError('Incorrect data were send to server for profile update'));
+        return;
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new DocumentNotFoundError('User with such id has not found');
+        next(new DocumentNotFoundError('User with such id has not found'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to update profile');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to update profile'));
+    });
 };
 
 const updateAvatar = (req, res, next) => {
@@ -84,20 +82,18 @@ const updateAvatar = (req, res, next) => {
     },
   )
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestError('Incorrect data were send to server for avatar update');
-      }
-      if (err instanceof mongoose.Error.CastError) {
-        throw new BadRequestError('Please enter correct user id');
+        next(new BadRequestError('Incorrect data were send to server for avatar update'));
+        return;
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new DocumentNotFoundError('User with such id has not found');
+        next(new DocumentNotFoundError('User with such id has not found'));
+        return;
       }
-      throw new UnhandledError('Server has broken while trying to update avatar');
-    })
-    .catch((err) => next(err));
+      next(new UnhandledError('Server has broken while trying to update avatar'));
+    });
 };
 
 module.exports = {
