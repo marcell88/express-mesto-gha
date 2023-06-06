@@ -6,6 +6,8 @@ userRouter.get('/', userControllers.getUsers);
 userRouter.get('/me', userControllers.getCurrentUser);
 userRouter.get('/:id', userControllers.getUserById);
 
+const linkRegex = /^http(s)?:\/\/(www\.)?[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=]/;
+
 userRouter.patch('/me', celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
@@ -15,7 +17,7 @@ userRouter.patch('/me', celebrate({
 
 userRouter.patch('/me/avatar', celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string(),
+    avatar: Joi.string().regex(linkRegex),
   }),
 }), userControllers.updateAvatar);
 
