@@ -2,7 +2,7 @@ const userRouter = require('express').Router();
 const userControllers = require('../controllers/users');
 
 userRouter.get('/', userControllers.getUsers);
-userRouter.post('/', userControllers.createUser);
+userRouter.get('/me', userControllers.getCurrentUser);
 userRouter.get('/:id', userControllers.getUserById);
 
 userRouter.patch('/me', userControllers.updateProfile);

@@ -1,9 +1,16 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = require('node:http2').constants;
+
+const MONGO_DUBLICATE_ERROR = 11000;
+const SUPER_SECRET = 'super-secret';
 
 const BadRequestError = require('../errors/BadRequestError');
 const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
+const UnauthorizedError = require('../errors/UnautorizedError');
+const ConflictError = require('../errors/ConflictError');
 const User = require('../models/users');
 
 const getUsers = (req, res, next) => {
@@ -14,8 +21,8 @@ const getUsers = (req, res, next) => {
     });
 };
 
-const getUserById = (req, res, next) => {
-  User.findById(req.params.id)
+const findUserById = (id, req, res, next) => {
+  User.findById(id)
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
     .catch((err) => {
@@ -31,12 +38,47 @@ const getUserById = (req, res, next) => {
     });
 };
 
+const getUserById = (req, res, next) => {
+  findUserById(req.params.id, req, res, next);
+};
+
+const getCurrentUser = (req, res, next) => {
+  findUserById(req.user._id, req, res, next);
+};
+
 const createUser = (req, res, next) => {
-  User.create(req.body)
+  bcrypt.hash(req.body.password, 10)
+    .then((hash) => User.create({
+      name: req.body.name,
+      about: req.body.about,
+      avatar: req.body.avatar,
+      email: req.body.email,
+      password: hash,
+    }))
     .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
     .catch((err) => {
+      if (err.code === MONGO_DUBLICATE_ERROR) {
+        next(new ConflictError('User with such email is already registered'));
+        return;
+      }
       if (err instanceof mongoose.Error.ValidationError) {
         next(new BadRequestError('Incorrect data were send to server for user creation'));
+        return;
+      }
+      next(new UnhandledError('Server has broken while trying to create new user'));
+    });
+};
+
+const login = (req, res, next) => {
+  const { email, password } = req.body;
+  User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, SUPER_SECRET, { expiresIn: '7d' });
+      res.status(HTTP_STATUS_CREATED).send({ token });
+    })
+    .catch((err) => {
+      if (err instanceof UnauthorizedError) {
+        next(err);
         return;
       }
       next(new UnhandledError('Server has broken while trying to create new user'));
@@ -86,4 +128,6 @@ module.exports = {
   createUser,
   updateProfile,
   updateAvatar,
+  login,
+  getCurrentUser,
 };

@@ -6,6 +6,7 @@ const Card = require('../models/cards');
 const BadRequestError = require('../errors/BadRequestError');
 const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
+const UnauthorizedError = require('../errors/UnautorizedError');
 
 const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = http2.constants;
 
@@ -19,10 +20,22 @@ const getCards = (req, res, next) => {
 };
 
 const deleteCardById = (req, res, next) => {
-  Card.findByIdAndDelete(req.params.id)
+  Card.findById(req.params.id)
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
-    .then(() => res.status(HTTP_STATUS_OK).send({ message: 'Deleted successfully' }))
+    .then((card) => {
+      if (card.owner.toString() !== req.user._id) {
+        throw new UnauthorizedError('Access denied');
+      }
+      Card.findByIdAndDelete(req.params.id)
+        .then(() => {
+          res.status(HTTP_STATUS_OK).send({ message: 'Deleted successfully' });
+        });
+    })
     .catch((err) => {
+      if (err instanceof UnauthorizedError) {
+        next(new UnauthorizedError('Access denied'));
+        return;
+      }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         next(new DocumentNotFoundError('Card with such id has not found'));
         return;

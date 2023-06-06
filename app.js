@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const auth = require('./middlewares/auth');
 const router = require('./routes/index');
+const { login, createUser } = require('./controllers/users');
 
 // Constants
 const { PORT = 3000 } = process.env;
@@ -13,13 +15,10 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb')
   .catch((err) => { console.log('Error with DB connection: ', err); });
 
 app.use(express.json());
-app.use((req, res, next) => {
-  req.user = {
-    _id: '64709b6087ee65521a88aee9',
-  };
-  next();
-});
 
+app.post('/signin', login);
+app.post('/signup', createUser);
+app.use(auth);
 app.use('/', router);
 
 // Дефолтный обработчик ошибок
