@@ -6,7 +6,7 @@ const Card = require('../models/cards');
 const BadRequestError = require('../errors/BadRequestError');
 const DocumentNotFoundError = require('../errors/DocumentNotFoundError');
 const UnhandledError = require('../errors/UnhandledErrod');
-const UnauthorizedError = require('../errors/UnautorizedError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = http2.constants;
 
@@ -24,7 +24,7 @@ const deleteCardById = (req, res, next) => {
     .orFail(() => { throw new mongoose.Error.DocumentNotFoundError(); })
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
-        throw new UnauthorizedError('Access denied');
+        throw new ForbiddenError();
       }
       Card.findByIdAndDelete(req.params.id)
         .then(() => {
@@ -32,8 +32,8 @@ const deleteCardById = (req, res, next) => {
         });
     })
     .catch((err) => {
-      if (err instanceof UnauthorizedError) {
-        next(new UnauthorizedError('Access denied'));
+      if (err instanceof ForbiddenError) {
+        next(new ForbiddenError('Access denied, this is not your card'));
         return;
       }
       if (err instanceof mongoose.Error.DocumentNotFoundError) {

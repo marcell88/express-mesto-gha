@@ -55,7 +55,12 @@ const createUser = (req, res, next) => {
       email: req.body.email,
       password: hash,
     }))
-    .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
+    .then((user) => res.status(HTTP_STATUS_CREATED).send({
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    }))
     .catch((err) => {
       if (err.code === MONGO_DUBLICATE_ERROR) {
         next(new ConflictError('User with such email is already registered'));
@@ -74,7 +79,7 @@ const login = (req, res, next) => {
   User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, SUPER_SECRET, { expiresIn: '7d' });
-      res.status(HTTP_STATUS_CREATED).send({ token });
+      res.status(HTTP_STATUS_OK).send({ token });
     })
     .catch((err) => {
       if (err instanceof UnauthorizedError) {
