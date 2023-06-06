@@ -26,7 +26,8 @@ const deleteCardById = (req, res, next) => {
       if (card.owner.toString() !== req.user._id) {
         throw new ForbiddenError();
       }
-      Card.findByIdAndDelete(req.params.id)
+      // Этот промис не имеет catch, но его должен обработать один общий catch ниже - добавил return
+      return Card.findByIdAndDelete(req.params.id)
         .then(() => {
           res.status(HTTP_STATUS_OK).send({ message: 'Deleted successfully' });
         });
