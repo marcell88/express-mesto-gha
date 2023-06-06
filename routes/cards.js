@@ -26,6 +26,10 @@ cardRouter.post('/', celebrate({
   }),
 }), cardControllers.createCard);
 
-cardRouter.put('/:id/likes', cardControllers.likeCard);
+cardRouter.put('/:id/likes', celebrate({
+  params: Joi.object().keys({
+    id: Joi.string().regex(idRegex),
+  }),
+}), cardControllers.likeCard);
 
 module.exports = cardRouter;
